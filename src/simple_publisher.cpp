@@ -1,9 +1,11 @@
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <ros/transport_subscriber_link.h>
 #include <ros/connection.h>
 #include <ros/connection_manager.h>
 #include <ros/transport/transport_udp.h>
 #include <ros/poll_manager.h>
+#include <ros/serialization.h>
 #include <std_msgs/String.h>
 
 // ros::NodeHandle.advertise
@@ -22,37 +24,39 @@
 //   -> Publication::processPublishQueue
 
 // TopicManager::requestTopic
-//   --> 
+//   -->
+
+void emptyFinishFunc(const ros::ConnectionPtr&)
+{
+
+}
+
 int main(int argc, char** argv)
 {
-  std_msgs::String string_message;
-  string_message.data = "Hello World";
+  if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) ) {
+    ros::console::notifyLoggerLevelsChanged();
+  }
+
+  
   boost::shared_ptr<ros::TransportSubscriberLink> subscriber_link
     (new ros::TransportSubscriberLink);
   ros::TransportUDPPtr transport_server(new ros::TransportUDP(&ros::PollManager::instance()->getPollSet()));
   bool success = transport_server->createIncoming(0, true);
   boost::shared_ptr<ros::Connection> connection(new ros::Connection);
   
-  ros::TransportUDPPtr transport = transport_server->createOutgoing("localhost", 2014, 0, 1);
-  connection->initialize(transport,false, NULL);
-  subscriber_link->initialize(connection);
-  ros::SerializedMessage m;
-  m.type_info = &typeid(std_msgs::String);
-  m.message = boost::make_shared<std_msgs::String>(string_message);
+  
   while (true) {
+    ros::TransportUDPPtr transport = transport_server->createOutgoing("localhost", 2014, 0, 1000);
+    std_msgs::String string_message;
+    string_message.data = "Hello World";
+    connection->initialize(transport,false, NULL);
     std::cerr << "send" << std::endl;
-    subscriber_link->enqueueMessage(m, false, false);
+    ros::SerializedMessage m2 = ros::serialization::serializeMessage<std_msgs::String>(string_message);
+    connection->write(m2.buf, m2.num_bytes, boost::bind(&emptyFinishFunc, _1),
+                      true);
+    std::cerr << "ISdROP" << connection->isDropped() << std::endl;
     sleep(1);
   }
-  // ros::ConnectionManagerPtr connection_manager = ros::ConnectionManager::instance();
-  // //connection_manager->start();
-  // connection_manager->getUDPServerTransport();
-  // ros::TransportUDPPtr transport = connection_manager->getUDPServerTransport()->createOutgoing("localhost", 1024, 0, 1000);
-  //ros::Header h;
-  //connection->writeTransport();
-  // ros::AdvertiseOptions ops;
-  // ops.template init<std_msgs::String>("dummy_topic", 1);
-  // ops.latch = false;
   std::cout << "done" << std::endl;
   return 0;
 }

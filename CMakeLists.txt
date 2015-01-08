@@ -102,6 +102,7 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(simple_publisher src/simple_publisher.cpp)
+add_executable(simple_subscriber src/simple_subscriber.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -109,6 +110,9 @@ add_executable(simple_publisher src/simple_publisher.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(simple_publisher
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(simple_subscriber
   ${catkin_LIBRARIES}
 )
 
